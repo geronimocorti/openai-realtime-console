@@ -12,6 +12,7 @@ const LOCAL_RELAY_SERVER_URL: string =
   process.env.REACT_APP_LOCAL_RELAY_SERVER_URL || '';
 
 import { useEffect, useRef, useCallback, useState } from 'react';
+const sanitizeHtml = require('sanitize-html');
 
 import { RealtimeClient } from '@openai/realtime-api-beta';
 import { ItemType } from '@openai/realtime-api-beta/dist/lib/client.js';
@@ -184,7 +185,7 @@ export function ConsolePage() {
     client.sendUserMessageContent([
       {
         type: `input_text`,
-        text: `Hello!`,
+        text: `Hola!`,
         // text: `For testing purposes, I want you to list ten car brands. Number each item, e.g. "one (or whatever number you are one): the item name".`
       },
     ]);
@@ -261,7 +262,7 @@ export function ConsolePage() {
       await wavRecorder.pause();
     }
     client.updateSession({
-      turn_detection: value === 'none' ? null : { type: 'server_vad' },
+      turn_detection: value === 'none' ? null : { type: 'server_vad', silence_duration_ms: 700 },
     });
     if (value === 'server_vad' && client.isConnected()) {
       await wavRecorder.record((data) => client.appendInputAudio(data.mono));
@@ -385,15 +386,15 @@ export function ConsolePage() {
       {
         name: 'get_faqs',
         description:
-          `Provide answers for particular user questions or inquires related with the business. Use it when the user ask for specific business inquires.
+          `Provide suggested answers for particular user questions or inquires related with the business. Use it when the user ask for specific business inquires.
+          In downtime until you get the information, you must pretend you are looking for it using "transition sounds" like "uhm", "eem", "wait a minute, i am looking for information", etc.
+          You don't have to use the result of this tool exactly but rather summarize it.
           Use it when user say something like:
           I want to know how to reschedule my <product> dates,
           How can i do a change in my reservation,
           My reservation is affected, what does it mean?,
-          How can i add extra baggage?,
           I have a problem with my payment,
           I want to choose my seats, I am traveling with a baby,
-          I want to add a person to my reservation,
           I want to change the name of one of the passengers to someone else,
           My flight change is very expensive, what can I do?,
           How do I recover my points after a transaction that was not successful?
@@ -412,11 +413,11 @@ export function ConsolePage() {
       async ({ question }: { [key: string]: any }) => {
         try{
           const result = await fetch(
-            `http://dembed.test.us-east-1.despegar.net/document/DQGat5ABOnR6DXIyndzT/query?limit=6&filter=product_types:flight&text=${question}`,
+            `http://dembed.us-east-1.despegar.net/document/UGa-u5ABeI0nFQTbLH5c/query?limit=6&filter=product_types:flight&text=${question}`,
             {
               headers: {
                 'Content-Type': 'application/json', // Header para indicar tipo de contenido
-                'xdesp-sandbox': 'true',
+                //'xdesp-sandbox': 'true',
                 'x-client': 'gcorti',
                 'x-uow': 'gcorti-prueba-gpt-real-api-123'
               }
@@ -424,7 +425,48 @@ export function ConsolePage() {
           );
           const json = await result.json();
           console.log(json);
-          return json[0].metadata.unlocalized_content.es.body;
+          const r = json[0].metadata.unlocalized_content.es.body.content;
+          console.log(r);
+          const finalResult = sanitizeHtml(r, {
+            allowedTags: [], // No permitas ninguna etiqueta
+            allowedAttributes: {} // No permitas ningún atributo
+          });
+          console.log(finalResult);
+          return {
+            faq: finalResult
+          };
+        } catch(e) {
+          console.log("Algo salió mal!!");
+          console.log(e);
+        }
+      }
+    );
+
+    client.addTool(
+      {
+        name: 'can_derivate_with_a_human',
+        description:
+          `Provide the information if the user is allowed to talk with an agent, a human, an advisor, or an assistant of the company. 
+          It's very important to call this tool only if the user is explicitly an directly asking or consulting in the conversation for a human, advisor, agent or assistant.`,
+        parameters: {
+          type: 'object',
+          properties: {
+            reason: {
+              type: 'string',
+              description: 'Specifies why the customer wants to speak with a human agent. If the user states, \'I want to talk to a human,\' not set the reason as no specific reason is given. If the user provides a detailed reason, such as \'I want to talk to a person to help with my flight that was rescheduled due to flooding in Rio Grande,\' set the reason to something like \'rescheduling due to Rio Grande flight flooding.\' Only fill this parameter if a specific reason is provided in user language'
+            },
+          },
+          required: ['question'],
+        },
+      },
+      async ({ reason }: { [key: string]: any }) => {
+        try{
+          let numeroAleatorio = Math.random();
+          const isAllowed = {
+            allowed: numeroAleatorio > 0.5
+          }
+          console.log("Allowed?: " + isAllowed.allowed);
+          return isAllowed;
         } catch(e) {
           console.log("Algo salió mal!!");
           console.log(e);
