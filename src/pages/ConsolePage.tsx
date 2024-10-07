@@ -381,77 +381,54 @@ export function ConsolePage() {
     // Set transcription, otherwise we don't get user transcriptions back
     client.updateSession({ input_audio_transcription: { model: 'whisper-1' } });
 
-    // Add tools
     client.addTool(
       {
-        name: 'set_memory',
-        description: 'Saves important data about the user into memory.',
-        parameters: {
-          type: 'object',
-          properties: {
-            key: {
-              type: 'string',
-              description:
-                'The key of the memory value. Always use lowercase and underscores, no other characters.',
-            },
-            value: {
-              type: 'string',
-              description: 'Value can be anything represented as a string',
-            },
-          },
-          required: ['key', 'value'],
-        },
-      },
-      async ({ key, value }: { [key: string]: any }) => {
-        setMemoryKv((memoryKv) => {
-          const newKv = { ...memoryKv };
-          newKv[key] = value;
-          return newKv;
-        });
-        return { ok: true };
-      }
-    );
-    client.addTool(
-      {
-        name: 'get_weather',
+        name: 'get_faqs',
         description:
-          'Retrieves the weather for a given lat, lng coordinate pair. Specify a label for the location.',
+          `Provide answers for particular user questions or inquires related with the business. Use it when the user ask for specific business inquires.
+          Use it when user say something like:
+          I want to know how to reschedule my <product> dates,
+          How can i do a change in my reservation,
+          My reservation is affected, what does it mean?,
+          How can i add extra baggage?,
+          I have a problem with my payment,
+          I want to choose my seats, I am traveling with a baby,
+          I want to add a person to my reservation,
+          I want to change the name of one of the passengers to someone else,
+          My flight change is very expensive, what can I do?,
+          How do I recover my points after a transaction that was not successful?
+          `,
         parameters: {
           type: 'object',
           properties: {
-            lat: {
-              type: 'number',
-              description: 'Latitude',
-            },
-            lng: {
-              type: 'number',
-              description: 'Longitude',
-            },
-            location: {
+            question: {
               type: 'string',
-              description: 'Name of the location',
+              description: 'One line concise resume of user inquiry in user language',
             },
           },
-          required: ['lat', 'lng', 'location'],
+          required: ['question'],
         },
       },
-      async ({ lat, lng, location }: { [key: string]: any }) => {
-        setMarker({ lat, lng, location });
-        setCoords({ lat, lng, location });
-        const result = await fetch(
-          `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,wind_speed_10m`
-        );
-        const json = await result.json();
-        const temperature = {
-          value: json.current.temperature_2m as number,
-          units: json.current_units.temperature_2m as string,
-        };
-        const wind_speed = {
-          value: json.current.wind_speed_10m as number,
-          units: json.current_units.wind_speed_10m as string,
-        };
-        setMarker({ lat, lng, location, temperature, wind_speed });
-        return json;
+      async ({ question }: { [key: string]: any }) => {
+        try{
+          const result = await fetch(
+            `http://dembed.test.us-east-1.despegar.net/document/DQGat5ABOnR6DXIyndzT/query?limit=6&filter=product_types:flight&text=${question}`,
+            {
+              headers: {
+                'Content-Type': 'application/json', // Header para indicar tipo de contenido
+                'xdesp-sandbox': 'true',
+                'x-client': 'gcorti',
+                'x-uow': 'gcorti-prueba-gpt-real-api-123'
+              }
+            }
+          );
+          const json = await result.json();
+          console.log(json);
+          return json[0].metadata.unlocalized_content.es.body;
+        } catch(e) {
+          console.log("Algo salió mal!!");
+          console.log(e);
+        }
       }
     );
 
@@ -693,7 +670,7 @@ export function ConsolePage() {
         </div>
         <div className="content-right">
           <div className="content-block map">
-            <div className="content-block-title">get_weather()</div>
+            <div className="content-block-title">get_faqs()</div>
             <div className="content-block-title bottom">
               {marker?.location || 'not yet retrieved'}
               {!!marker?.temperature && (
