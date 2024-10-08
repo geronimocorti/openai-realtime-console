@@ -558,6 +558,11 @@ export function ConsolePage() {
             </div>
           </div>
         </div>
+        {isConnected && canPushToTalk && (
+          <div className="modal-button-text">
+            {isRecording ? 'Soltar para enviar' : 'Presionar para hablar'}
+          </div>
+        )}
         <div className="modal-connect">
           <Toggle
             defaultValue={false}
