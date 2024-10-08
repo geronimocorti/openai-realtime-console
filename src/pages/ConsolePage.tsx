@@ -262,7 +262,7 @@ export function ConsolePage() {
       await wavRecorder.pause();
     }
     client.updateSession({
-      turn_detection: value === 'none' ? null : { type: 'server_vad', silence_duration_ms: 700 },
+      turn_detection: value === 'none' ? null : { type: 'server_vad', silence_duration_ms: 800 },
     });
     if (value === 'server_vad' && client.isConnected()) {
       await wavRecorder.record((data) => client.appendInputAudio(data.mono));
