@@ -79,7 +79,7 @@ export function ConsolePage() {
     new WavRecorder({ sampleRate: 24000 })
   );
   const wavStreamPlayerRef = useRef<WavStreamPlayer>(
-    new WavStreamPlayer({ sampleRate: 24000 })
+    new WavStreamPlayer({ sampleRate: 25500 })
   );
   const clientRef = useRef<RealtimeClient>(
     new RealtimeClient(
