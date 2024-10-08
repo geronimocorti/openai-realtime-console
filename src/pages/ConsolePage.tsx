@@ -80,6 +80,7 @@ export function ConsolePage() {
   );
   const wavStreamPlayerRef = useRef<WavStreamPlayer>(
     new WavStreamPlayer({ sampleRate: 25500 })
+    // new WavStreamPlayer({ sampleRate: 24000 }) Default sampling rate
   );
   const clientRef = useRef<RealtimeClient>(
     new RealtimeClient(
