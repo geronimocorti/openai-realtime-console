@@ -412,17 +412,8 @@ export function ConsolePage() {
       },
       async ({ question }: { [key: string]: any }) => {
         try{
-          const result = await fetch(
-            `http://dembed.us-east-1.despegar.net/document/UGa-u5ABeI0nFQTbLH5c/query?limit=6&filter=product_types:flight&text=${question}`,
-            {
-              headers: {
-                'Content-Type': 'application/json', // Header para indicar tipo de contenido
-                //'xdesp-sandbox': 'true',
-                'x-client': 'gcorti',
-                'x-uow': 'gcorti-prueba-gpt-real-api-123'
-              }
-            }
-          );
+          const result = await fetch(`http://localhost:8080/api/query?question=${question}`);
+          
           const json = await result.json();
           console.log(json);
           const r = json[0].metadata.unlocalized_content.es.body.content;
