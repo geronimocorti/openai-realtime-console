@@ -99,13 +99,50 @@ export const WavRenderer = {
       barWidth = (canvas.width - barSpacing) / pointCount - barSpacing;
     }
     const points = normalizeArray(data, pointCount, true);
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const maxRadius = Math.min(centerX, centerY) - barSpacing;
+
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(centerX, centerY);
+
+    const startAngle = Math.PI / 4; // Ajusta este valor para cambiar el punto de inicio
+
+    let nextX: number = 0;
+    let nextY: number = 0;
+
     for (let i = 0; i < pointCount; i++) {
       const amplitude = Math.abs(points[i]);
-      const height = Math.max(1, amplitude * canvas.height);
-      const x = barSpacing + i * (barWidth + barSpacing);
-      const y = center ? (canvas.height - height) / 2 : canvas.height - height;
-      ctx.fillStyle = color;
-      ctx.fillRect(x, y, barWidth, height);
+      const radius = Math.max(1, amplitude * maxRadius);
+      const angle = startAngle + (i / pointCount) * 2 * Math.PI;
+      const x = centerX + radius * Math.cos(angle);
+      const y = centerY + radius * Math.sin(angle);
+
+      const nextIndex = (i + 1) % pointCount;
+      const nextAmplitude = Math.abs(points[nextIndex]);
+      const nextRadius = Math.max(1, nextAmplitude * maxRadius);
+      const nextAngle = startAngle + (nextIndex / pointCount) * 2 * Math.PI;
+      nextX = centerX + nextRadius * Math.cos(nextAngle);
+      nextY = centerY + nextRadius * Math.sin(nextAngle);
+
+      const controlX = (x + nextX) / 2;
+      const controlY = (y + nextY) / 2;
+
+      ctx.quadraticCurveTo(x, y, controlX, controlY);
     }
-  },
+
+    // Conectar el último punto con el primero
+    const firstAmplitude = Math.abs(points[0]);
+    const firstRadius = Math.max(1, firstAmplitude * maxRadius);
+    const firstAngle = startAngle;
+    const firstX = centerX + firstRadius * Math.cos(firstAngle);
+    const firstY = centerY + firstRadius * Math.sin(firstAngle);
+
+    ctx.quadraticCurveTo(nextX, nextY, (nextX + firstX) / 2, (nextY + firstY) / 2);
+    ctx.quadraticCurveTo((nextX + firstX) / 2, (nextY + firstY) / 2, firstX, firstY);
+
+    ctx.closePath();
+    ctx.fill();
+  }
 };
